@@ -23,42 +23,41 @@ impl Highlighter for CustomHelper {
 
     fn highlight<'l>(&self, line: &'l str, _pos: usize) -> Cow<'l, str> {
         let keys: Vec<&str> = vec![
-            "const", "let", "as", "any", "set", "fn", "for", 
-            "in", "while", "if", "else", "match", "return", 
+            "const", "let", "as", "any", "set", "fn", "for",
+            "in", "while", "if", "else", "match", "return",
             "import"
         ];
+        let data_types: Vec<&str> = vec!["true", "false", "null"];
 
-        let data_types: Vec<&str> = vec![
-            "true", "false", "null"
-        ];
+        let kw_pattern = keys.join("|");
+        let dt_pattern = data_types.join("|");
+        let pattern = format!(
+            r#"("(?:[^"]*)")|(\b(?:{kw_pattern})\b)|(\b(?:{dt_pattern})\b)|(\b(\w+)\s*\()"#
+        );
+        let regex = regex::Regex::new(&pattern).unwrap();
 
-        let mut current_line = line.to_string();
+        let mut output = String::new();
+        let mut last_end = 0;
 
-        // strings
-        let regex = regex::Regex::new(r#""[^"]*""#).unwrap();
-        current_line = regex.replace_all(&current_line, |cap: &regex::Captures| {
-            format!("\x1b[33m{}\x1b[0m", &cap[0])
-        }).to_string();
+        for cap in regex.captures_iter(line) {
+            let m = cap.get(0).unwrap();
+            output.push_str(&line[last_end..m.start()]);
 
-        // function calls
-        let regex = regex::Regex::new(r"\b(\w+)\s*\(").unwrap();
-        current_line = regex.replace_all(&current_line, |cap: &regex::Captures| {
-            format!("\x1b[34m{}\x1b[0m(", &cap[1])
-        }).to_string();
+            if cap.get(1).is_some() {
+                output.push_str(&format!("\x1b[32m{}\x1b[0m", m.as_str()));
+            } else if cap.get(2).is_some() {
+                output.push_str(&format!("\x1b[36m{}\x1b[0m", m.as_str()));
+            } else if cap.get(3).is_some() {
+                output.push_str(&format!("\x1b[33m{}\x1b[0m", m.as_str()));
+            } else if cap.get(5).is_some() {
+                output.push_str(&format!("\x1b[34m{}\x1b[0m(", &cap[5]));
+            }
 
-        for key in keys {
-            let pattern = format!("\\b{}\\b", key);
-            let regex = regex::Regex::new(&pattern).unwrap();
-            current_line = regex.replace_all(&current_line, &format!("\x1b[36m{}\x1b[0m", key)).to_string();
+            last_end = m.end();
         }
 
-        for data_type in data_types {
-            let pattern = format!("\\b{}\\b", data_type);
-            let regex = regex::Regex::new(&pattern).unwrap();
-            current_line = regex.replace_all(&current_line, &format!("\x1b[33m{}\x1b[0m", data_type)).to_string();
-        }
-
-        current_line.into()
+        output.push_str(&line[last_end..]);
+        output.into()
     }
 
     fn highlight_char(&self, _line: &str, _pos: usize, kind: CmdKind) -> bool {
