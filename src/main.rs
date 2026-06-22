@@ -1,10 +1,33 @@
-use nbcl::{NbclEngine, context::EvalContext};
+mod register;
+
+use nbcl::{NbclEngine, context::EvalContext, ast::resolved::ResolvedTree};
+use register::register_all_into;
+use std::sync::{Arc, Mutex};
+
+#[derive(Clone, Debug, Default)]
+pub struct Data {
+    prev_tree: Option<ResolvedTree>,
+}
+
+impl Data {
+    pub fn new() -> Arc<Mutex<Self>> {
+         Arc::new(Mutex::new(Self::default()))
+    }
+}
 
 fn main() {
-    let engine = NbclEngine::new();
+    let mut engine = NbclEngine::new();
+    let data = Data::new();
+    
+    register_all_into(&mut engine, data.clone());
+
     let mut rl = rustyline::DefaultEditor::new().unwrap();
     let mut buffer = String::new();
     let mut accumulated_ctx: EvalContext = EvalContext::from(&engine);
+
+    // print help
+    println!("Help: Exit using Ctrl+C, Ctrl+D, or exit()");
+    println!("Help: Run help() for information");
 
     loop {
         let prompt = if buffer.is_empty() { ">> " } else { ".. " };
@@ -21,7 +44,11 @@ fn main() {
                 match engine.parse_str(&buffer) {
                     Ok(ast) => {
                         match engine.eval_ast_with_eval_ctx(ast, &mut accumulated_ctx) {
-                            Ok(_) => {}
+                            Ok(tree) => {
+                                if let Ok(ref mut mutex) = data.try_lock() {
+                                    mutex.prev_tree = Some(tree);
+                                }
+                            }
                             Err(e) => eprintln!("Error: {}", e),
                         }
                     }
