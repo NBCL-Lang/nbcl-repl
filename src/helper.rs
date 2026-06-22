@@ -3,15 +3,13 @@ use std::borrow::Cow::{self, Owned};
 use rustyline::completion::FilenameCompleter;
 use rustyline::highlight::{CmdKind, Highlighter};
 use rustyline::hint::HistoryHinter;
-use rustyline::validate::MatchingBracketValidator;
-use rustyline::{Completer, Helper, Hinter, Validator};
+use rustyline::validate::{Validator, ValidationResult, ValidationContext};
+use rustyline::{Completer, Helper, Hinter};
 
-#[derive(Helper, Completer, Hinter, Validator)]
+#[derive(Helper, Completer, Hinter)]
 pub struct CustomHelper {
     #[rustyline(Completer)]
     completer: FilenameCompleter,
-    #[rustyline(Validator)]
-    validator: MatchingBracketValidator,
     #[rustyline(Hinter)]
     hinter: HistoryHinter,
 }
@@ -69,12 +67,19 @@ impl Highlighter for CustomHelper {
     }
 }
 
+// we stub this because we already got a 
+// custom validator with a custom prefix.
+impl Validator for CustomHelper {
+    fn validate(&self, _ctx: &mut ValidationContext) -> rustyline::Result<ValidationResult> {
+        Ok(ValidationResult::Valid(None))
+    }
+}
+
 impl CustomHelper {
     pub fn new() -> Self {
         Self {
             completer: FilenameCompleter::new(),
             hinter: HistoryHinter::new(),
-            validator: MatchingBracketValidator::new(),
         }
     }
 }
