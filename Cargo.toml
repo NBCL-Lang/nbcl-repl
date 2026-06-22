@@ -9,4 +9,5 @@ path = "src/main.rs"
 
 [dependencies]
 nbcl = "0.5.5"
-rustyline = "18.0.0"
+regex = "1.12.4"
+rustyline = { version = "18.0.0", features = ["derive"] }

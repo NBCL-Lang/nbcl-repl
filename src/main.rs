@@ -1,8 +1,10 @@
 mod register;
+mod helper;
 
 use nbcl::{NbclEngine, context::EvalContext, ast::resolved::ResolvedTree};
 use register::register_all_into;
 use std::sync::{Arc, Mutex};
+use rustyline::{CompletionType, EditMode};
 
 #[derive(Clone, Debug, Default)]
 pub struct Data {
@@ -21,9 +23,17 @@ fn main() {
     
     register_all_into(&mut engine, data.clone());
 
-    let mut rl = rustyline::DefaultEditor::new().unwrap();
+    let config = rustyline::Config::builder()
+        .history_ignore_space(true)
+        .completion_type(CompletionType::List)
+        .edit_mode(EditMode::Emacs)
+        .build();
+
+    let mut rl = rustyline::Editor::with_config(config).expect("Rustyline to load");
     let mut buffer = String::new();
     let mut accumulated_ctx: EvalContext = EvalContext::from(&engine);
+
+    rl.set_helper(Some(helper::CustomHelper::new()));
 
     // print help
     println!("Help: Exit using Ctrl+C, Ctrl+D, or exit()");
