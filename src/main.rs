@@ -4,7 +4,7 @@ mod helper;
 use nbcl::{NbclEngine, context::EvalContext, ast::resolved::ResolvedTree};
 use register::register_all_into;
 use std::sync::{Arc, Mutex};
-use rustyline::{CompletionType, EditMode};
+use rustyline::{CompletionType, EditMode, error::ReadlineError};
 
 #[derive(Clone, Debug, Default)]
 pub struct Data {
@@ -32,6 +32,7 @@ fn main() {
     let mut rl = rustyline::Editor::with_config(config).expect("Rustyline to load");
     let mut buffer = String::new();
     let mut accumulated_ctx: EvalContext = EvalContext::from(&engine);
+    let mut last_was_interrupt = false;
 
     rl.set_helper(Some(helper::CustomHelper::new()));
 
@@ -43,6 +44,7 @@ fn main() {
         let prompt = if buffer.is_empty() { ">> " } else { ".. " };
         match rl.readline(prompt) {
             Ok(line) => {
+                last_was_interrupt = false;
                 rl.add_history_entry(&line).unwrap();
                 buffer.push_str(&line);
                 buffer.push('\n');
@@ -66,6 +68,18 @@ fn main() {
                 }
 
                 buffer.clear();
+            }
+            Err(ReadlineError::Interrupted) => {
+                if !buffer.is_empty() {
+                    buffer.clear();
+                    last_was_interrupt = false;
+                    println!("(input cleared)");
+                } else if last_was_interrupt {
+                    break;
+                } else {
+                    last_was_interrupt = true;
+                    println!("(press Ctrl+C again to exit)");
+                }
             }
             Err(_) => break,
         }
