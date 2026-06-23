@@ -29,10 +29,43 @@ impl Highlighter for CustomHelper {
 
         let kw_pattern = keys.join("|");
         let dt_pattern = data_types.join("|");
+        
+        // WARNING: AI generated (close your eyes)
         let pattern = format!(
-            r#"("(?:[^"]*)")|(\b(?:{kw_pattern})\b)|(\b(?:{dt_pattern})\b)|(\b(\w+)\s*\()"#
+            r#"(?x:
+                # Formatted Strings ONLY (f"..." or f'...')
+                (
+                    f
+                    (?:
+                        " (?:[^"\\] | \\ .)* " | 
+                        ' (?:[^'\\] | \\ .)* '
+                    )
+                ) |
+
+                # Normal / Raw Strings (r"..." or "...")
+                (
+                    (?:r)?
+                    (?:
+                        " (?:[^"\\] | \\ .)* " | 
+                        ' (?:[^'\\] | \\ .)* '
+                    )
+                ) |
+
+                # Keywords
+                (\b (?:{kw_pattern}) \b) |
+
+                # Data types
+                (\b (?:{dt_pattern}) \b) |
+
+                # Function calls
+                ( \b (\w+) \s* \( )
+            )"#,
+            kw_pattern = kw_pattern,
+            dt_pattern = dt_pattern
         );
         let regex = regex::Regex::new(&pattern).unwrap();
+        
+        let f_interpolation_regex = regex::Regex::new(r"(\$\{.*?\})").unwrap();
 
         let mut output = String::new();
         let mut last_end = 0;
@@ -42,13 +75,18 @@ impl Highlighter for CustomHelper {
             output.push_str(&line[last_end..m.start()]);
 
             if cap.get(1).is_some() {
-                output.push_str(&format!("\x1b[32m{}\x1b[0m", m.as_str()));
+                let raw_str = m.as_str();
+                let highlighted_f_str = f_interpolation_regex.replace_all(raw_str, "\x1b[35m$1\x1b[32m");
+                
+                output.push_str(&format!("\x1b[32m{}\x1b[0m", highlighted_f_str));
             } else if cap.get(2).is_some() {
-                output.push_str(&format!("\x1b[36m{}\x1b[0m", m.as_str()));
+                output.push_str(&format!("\x1b[32m{}\x1b[0m", m.as_str()));
             } else if cap.get(3).is_some() {
+                output.push_str(&format!("\x1b[36m{}\x1b[0m", m.as_str()));
+            } else if cap.get(4).is_some() {
                 output.push_str(&format!("\x1b[33m{}\x1b[0m", m.as_str()));
             } else if cap.get(5).is_some() {
-                output.push_str(&format!("\x1b[34m{}\x1b[0m(", &cap[5]));
+                output.push_str(&format!("\x1b[34m{}\x1b[0m(", &cap[6]));
             }
 
             last_end = m.end();
