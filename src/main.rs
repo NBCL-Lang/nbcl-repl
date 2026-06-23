@@ -34,7 +34,11 @@ fn main() {
     let mut accumulated_ctx: EvalContext = EvalContext::from(&engine);
     let mut last_was_interrupt = false;
 
+    let event = rustyline::KeyEvent::new('\t', rustyline::Modifiers::NONE);
+    let action = rustyline::Cmd::Insert(1, "\t".to_string());
+
     rl.set_helper(Some(helper::CustomHelper::new()));
+    rl.bind_sequence(event, rustyline::EventHandler::Simple(action));
 
     // print help
     println!("Help: Exit using Ctrl+C, Ctrl+D, or exit()");
@@ -48,10 +52,6 @@ fn main() {
                 rl.add_history_entry(&line).unwrap();
                 buffer.push_str(&line);
                 buffer.push('\n');
-
-                if is_incomplete(&buffer) {
-                    continue;
-                }
 
                 match engine.parse_str(&buffer) {
                     Ok(ast) => {
@@ -84,24 +84,4 @@ fn main() {
             Err(_) => break,
         }
     }
-}
-
-fn is_incomplete(input: &str) -> bool {
-    let mut depth_curly = 0i32;
-    let mut depth_square = 0i32;
-    let mut depth_paren = 0i32;
-
-    for ch in input.chars() {
-        match ch {
-            '{' => depth_curly += 1,
-            '}' => depth_curly -= 1,
-            '[' => depth_square += 1,
-            ']' => depth_square -= 1,
-            '(' => depth_paren += 1,
-            ')' => depth_paren -= 1,
-            _ => {}
-        }
-    }
-
-    depth_curly > 0 || depth_square > 0 || depth_paren > 0
 }
