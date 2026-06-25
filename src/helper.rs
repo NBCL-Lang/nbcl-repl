@@ -35,6 +35,12 @@ impl Highlighter for CustomHelper {
         // WARNING: AI generated (close your eyes)
         let pattern = format!(
             r#"(?x:
+                # Block Comments (#- ... -#)
+                ( \#- [\s\S]*? -\# ) |
+
+                # Line Comments (# ...)
+                ( \# .* ) |
+
                 # Formatted Strings ONLY (f"..." or f'...')
                 (
                     f
@@ -77,21 +83,24 @@ impl Highlighter for CustomHelper {
             output.push_str(&line[last_end..m.start()]);
 
             if cap.get(1).is_some() {
+                output.push_str(&format!("\x1b[90m{}\x1b[0m", m.as_str()));
+            } else if cap.get(2).is_some() {
+                output.push_str(&format!("\x1b[90m{}\x1b[0m", m.as_str()));
+            } else if cap.get(3).is_some() {
                 let raw_str = m.as_str();
                 let highlighted_f_str = f_interpolation_regex.replace_all(raw_str, "\x1b[35m$1\x1b[32m");
-                
                 output.push_str(&format!("\x1b[32m{}\x1b[0m", highlighted_f_str));
-            } else if cap.get(2).is_some() {
-                output.push_str(&format!("\x1b[32m{}\x1b[0m", m.as_str()));
-            } else if cap.get(3).is_some() {
-                output.push_str(&format!("\x1b[36m{}\x1b[0m", m.as_str()));
             } else if cap.get(4).is_some() {
-                output.push_str(&format!("\x1b[33m{}\x1b[0m", m.as_str()));
+                output.push_str(&format!("\x1b[32m{}\x1b[0m", m.as_str()));
             } else if cap.get(5).is_some() {
+                output.push_str(&format!("\x1b[36m{}\x1b[0m", m.as_str()));
+            } else if cap.get(6).is_some() {
+                output.push_str(&format!("\x1b[33m{}\x1b[0m", m.as_str()));
+            } else if cap.get(7).is_some() {
                 output.push_str(&format!(
                     "\x1b[34m{}\x1b[0m{}", 
-                    &cap[6], 
-                    &cap[7]
+                    &cap[8],
+                    &cap[9]
                 ));
             }
 
