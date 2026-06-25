@@ -25,7 +25,7 @@ impl Highlighter for CustomHelper {
         let keys: Vec<&str> = vec![
             "const", "let", "as", "any", "set", "fn", "for",
             "in", "while", "if", "else", "match", "return",
-            "import"
+            "import", "component"
         ];
         let data_types: Vec<&str> = vec!["true", "false", "null"];
 
@@ -60,7 +60,7 @@ impl Highlighter for CustomHelper {
                 (\b (?:{dt_pattern}) \b) |
 
                 # Function calls
-                ( \b (\w+) \s* \( )
+                ( \b (\w+) (\s* \() )
             )"#,
             kw_pattern = kw_pattern,
             dt_pattern = dt_pattern
@@ -88,7 +88,11 @@ impl Highlighter for CustomHelper {
             } else if cap.get(4).is_some() {
                 output.push_str(&format!("\x1b[33m{}\x1b[0m", m.as_str()));
             } else if cap.get(5).is_some() {
-                output.push_str(&format!("\x1b[34m{}\x1b[0m(", &cap[6]));
+                output.push_str(&format!(
+                    "\x1b[34m{}\x1b[0m{}", 
+                    &cap[6], 
+                    &cap[7]
+                ));
             }
 
             last_end = m.end();
