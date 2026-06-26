@@ -65,6 +65,9 @@ impl Highlighter for CustomHelper {
                 # Data types
                 (\b (?:{dt_pattern}) \b) |
 
+                # Pascal Case 
+                (\b [A-Z] [a-zA-Z0-9]* \b) |
+
                 # Function calls
                 ( \b (\w+) (\s* \() )
             )"#,
@@ -97,10 +100,12 @@ impl Highlighter for CustomHelper {
             } else if cap.get(6).is_some() {
                 output.push_str(&format!("\x1b[33m{}\x1b[0m", m.as_str()));
             } else if cap.get(7).is_some() {
+                output.push_str(&format!("\x1b[35m{}\x1b[0m", m.as_str()));
+            } else if cap.get(8).is_some() {
                 output.push_str(&format!(
                     "\x1b[34m{}\x1b[0m{}", 
-                    &cap[8],
-                    &cap[9]
+                    &cap[9],
+                    &cap[10]
                 ));
             }
 
