@@ -5,6 +5,7 @@ use nbcl::{NbclEngine, context::EvalContext, ast::resolved::ResolvedTree};
 use register::register_all_into;
 use std::sync::{Arc, Mutex};
 use rustyline::{CompletionType, EditMode, error::ReadlineError};
+use std::path::PathBuf;
 
 #[derive(Clone, Debug, Default)]
 pub struct Data {
@@ -18,6 +19,27 @@ impl Data {
 }
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() >= 2 {
+        let file_str = &args[1];
+        let file = PathBuf::from(file_str);
+        let source = match std::fs::read_to_string(file) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("{e}");
+                return;
+            }
+        };
+
+        let engine = NbclEngine::new();
+        match engine.evaluate(&source) {
+            Ok(tree) => println!("{:#?}", tree),
+            Err(e) => eprintln!("{e}"),
+        }
+
+        return;
+    }
+
     let mut engine = NbclEngine::new();
     let data = Data::new();
     
