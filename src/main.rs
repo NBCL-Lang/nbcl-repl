@@ -41,6 +41,8 @@ fn main() {
     }
 
     let mut engine = NbclEngine::new();
+    engine.set_max_depth(500);
+
     let data = Data::new();
     
     register_all_into(&mut engine, data.clone());
