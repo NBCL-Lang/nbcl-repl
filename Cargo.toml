@@ -8,6 +8,6 @@ name = "nbcl"
 path = "src/main.rs"
 
 [dependencies]
-nbcl = "0.7.0"
+nbcl = "0.7.1"
 regex = "1.12.4"
 rustyline = { version = "18.0.0", features = ["derive", "custom-bindings"] }
